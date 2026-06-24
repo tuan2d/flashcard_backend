@@ -37,4 +37,15 @@ export async function initSchema() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS performance_events (
+      id         TEXT PRIMARY KEY,
+      device_id  TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      payload    JSONB NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_perf_device ON performance_events(device_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_perf_type ON performance_events(event_type)`;
 }
