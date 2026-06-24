@@ -1,6 +1,17 @@
 import sql from '@/lib/db';
 import { ok, err } from '@/lib/response';
 
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 /** GET /api/public/decks — trả về tất cả public decks, không cần auth */
 export async function GET() {
   try {
