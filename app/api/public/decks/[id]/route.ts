@@ -43,9 +43,12 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const { id } = await params;
 
     const rows = await sql`SELECT data FROM public_decks WHERE id = ${id}`;
-    if (rows.length === 0) return err('Deck not found', 404);
 
-    const existing = rows[0].data as Record<string, unknown> & { cards?: Record<string, unknown>[] };
+    // Nếu deck chưa tồn tại → tạo mới từ payload (cards trong sheet là cards khởi tạo)
+    const existing = (rows.length > 0
+      ? rows[0].data
+      : { id, cards: [], tags: [], isFromServer: true }
+    ) as Record<string, unknown> & { cards?: Record<string, unknown>[] };
     const { deck: deckPatch, cards: cardPatch } = await req.json() as {
       deck?: Record<string, unknown>;
       cards?: { id: string; [k: string]: unknown }[];
@@ -59,15 +62,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       }
     }
 
-    // Merge cards — chỉ update card ID đã tồn tại
+    // Merge cards
     if (cardPatch && cardPatch.length > 0) {
+      const isNewDeck = rows.length === 0;
       const cardMap = new Map((existing.cards ?? []).map((c) => [c.id as string, c]));
       for (const upd of cardPatch) {
-        if (!cardMap.has(upd.id)) continue; // bỏ qua card ID mới
-        const base = cardMap.get(upd.id)!;
+        if (!isNewDeck && !cardMap.has(upd.id)) continue; // deck cũ: bỏ qua card ID mới
+        const base = cardMap.get(upd.id) ?? {};
         const updatedCard: Record<string, unknown> = { ...base };
         for (const [k, v] of Object.entries(upd)) {
-          if (k !== 'id' && v !== '' && v !== null && v !== undefined) updatedCard[k] = v;
+          if (v !== '' && v !== null && v !== undefined) updatedCard[k] = v;
         }
         cardMap.set(upd.id, updatedCard);
       }
@@ -75,8 +79,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     }
 
     await sql`
-      UPDATE public_decks SET data = ${JSON.stringify(merged)}, updated_at = NOW()
-      WHERE id = ${id}
+      INSERT INTO public_decks (id, data, updated_at)
+      VALUES (${id}, ${JSON.stringify(merged)}, NOW())
+      ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data, updated_at = NOW()
     `;
     return new Response(null, { status: 204 });
   } catch (e) {
