@@ -6,7 +6,8 @@ type Ctx = { params: Promise<{ id: string }> };
 
 function checkSecret(req: NextRequest): boolean {
   const secret = req.nextUrl.searchParams.get('secret');
-  return !!secret && secret === process.env.ADMIN_SECRET;
+  const expected = process.env.ADMIN_SECRET ?? process.env.SETUP_SECRET;
+  return !!secret && !!expected && secret === expected;
 }
 
 /** PUT /api/public/decks/:id?secret=xxx — upsert deck vào public pool */
