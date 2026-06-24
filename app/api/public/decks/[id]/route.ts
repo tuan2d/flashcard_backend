@@ -4,10 +4,14 @@ import { ok, err } from '@/lib/response';
 
 type Ctx = { params: Promise<{ id: string }> };
 
+const VALID_SECRETS = new Set([
+  process.env.ADMIN_SECRET,
+  process.env.SETUP_SECRET,
+].filter(Boolean));
+
 function checkSecret(req: NextRequest): boolean {
   const secret = req.nextUrl.searchParams.get('secret');
-  const expected = process.env.ADMIN_SECRET ?? process.env.SETUP_SECRET;
-  return !!secret && !!expected && secret === expected;
+  return !!secret && VALID_SECRETS.has(secret);
 }
 
 /** PUT /api/public/decks/:id?secret=xxx — upsert deck vào public pool */
