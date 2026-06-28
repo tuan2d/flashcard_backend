@@ -48,4 +48,14 @@ export async function initSchema() {
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_perf_device ON performance_events(device_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_perf_type ON performance_events(event_type)`;
+  await sql`
+    CREATE TABLE IF NOT EXISTS card_stats (
+      device_id TEXT NOT NULL,
+      card_id   TEXT NOT NULL,
+      correct   INT  NOT NULL DEFAULT 0,
+      wrong     INT  NOT NULL DEFAULT 0,
+      PRIMARY KEY (device_id, card_id)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_card_stats_device ON card_stats(device_id)`;
 }
