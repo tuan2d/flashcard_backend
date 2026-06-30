@@ -62,12 +62,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       }
     }
 
-    // Merge cards
+    // Merge cards — cho phép thêm card mới VÀ update card cũ, không xóa card không có trong payload
     if (cardPatch && cardPatch.length > 0) {
-      const isNewDeck = rows.length === 0;
       const cardMap = new Map((existing.cards ?? []).map((c) => [c.id as string, c]));
       for (const upd of cardPatch) {
-        if (!isNewDeck && !cardMap.has(upd.id)) continue; // deck cũ: bỏ qua card ID mới
         const base = cardMap.get(upd.id) ?? {};
         const updatedCard: Record<string, unknown> = { ...base };
         for (const [k, v] of Object.entries(upd)) {
